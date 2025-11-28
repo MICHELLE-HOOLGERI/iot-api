@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from models.iot_model import IoTModel
+from iot_model import IoTModel
 
 app = Flask(__name__)
 model = IoTModel()
@@ -20,3 +20,4 @@ def home():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
