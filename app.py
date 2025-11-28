@@ -1,35 +1,51 @@
 from flask import Flask, request, jsonify
 from iot_model import IoTModel
+import numpy as np
 
 app = Flask(__name__)
 model = IoTModel()
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    data = request.json
+    try:
+        data = request.json
 
-    # Convert all received values to float (IMPORTANT FIX)
-    features = {
-        "pulse": float(data.get("pulse")),
-        "body_temp": float(data.get("body_temp")),
-        "farm_temp": float(data.get("farm_temp")),
-        "humidity": float(data.get("humidity")),
-        "milk_yield": float(data.get("milk_yield")),
-        "feeding_time": float(data.get("feeding_time")),
-        "movement": float(data.get("movement"))
-    }
+        # Validate fields
+        required = ["pulse", "body_temp", "farm_temp", "humidity",
+                    "milk_yield", "feeding_time", "movement"]
 
-    result = model.predict(features)
+        for key in required:
+            if key not in data:
+                return jsonify({"error": f"Missing value for: {key}"}), 400
 
-    return jsonify({
-        "model": "iot",
-        "prediction": result
-    })
+        # Convert inputs to float and prepare in correct shape
+        features = np.array([[
+            float(data["pulse"]),
+            float(data["body_temp"]),
+            float(data["farm_temp"]),
+            float(data["humidity"]),
+            float(data["milk_yield"]),
+            float(data["feeding_time"]),
+            float(data["movement"])
+        ]])
+
+        # Get prediction from model
+        result = model.predict(features)
+
+        return jsonify({
+            "model": "iot",
+            "prediction": result
+        })
+
+    except Exception as e:
+        # Return exact error instead of 500
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route("/")
 def home():
     return jsonify({"message": "IoT Model API is running"})
 
+
 if __name__ == "__main__":
     app.run(debug=True)
-
